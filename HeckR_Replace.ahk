@@ -4,6 +4,15 @@
 
 ;------------------------------------------------
 
+FALSE_WORKING_DIRECTORY_NAME := "FalseWorkingDirectory"
+
+if (!fileExist(FALSE_WORKING_DIRECTORY_NAME) || !InStr(fileExist(FALSE_WORKING_DIRECTORY_NAME), "D"))
+    FileCreateDir, %FALSE_WORKING_DIRECTORY_NAME%
+if (!InStr(fileExist(FALSE_WORKING_DIRECTORY_NAME), "H"))
+    FileSetAttrib, +H, %FALSE_WORKING_DIRECTORY_NAME%
+SetWorkingDir, %FALSE_WORKING_DIRECTORY_NAME%
+
+;------------------------------------------------
 mainConfigFilePath := regexreplace(A_ScriptFullPath, "\.[^.]+$",".ini")
 
 if (!FileExist(mainConfigFilePath)) {
@@ -99,9 +108,12 @@ readReplaceIni(configPath, inheritedSettings, dependencyBranch := "") {
             ; Update settings
             if (settingKey == "replaceModifiers")
                 settings[settingKey] := settings["replaceModifiers"] . settingValue
-            else if (settingKey == "relativePathRoot")
-                relativePathRoot := configFolder . settingValue . (SubStr(settingValue, 0) == "\" ? "" : "\")
-            else
+            else if (settingKey == "relativePathRoot") {
+                relativePathRoot := resolveFolderPath(configFolder, settingValue)
+
+                if (relativePathRoot["error"])
+                    configParsingError(relativePathRoot["message"], configFileName, A_Index)
+            } else
                 settings[settingKey] := settingValue
             
         } else if (sectionName == "replace configs") {
@@ -115,19 +127,12 @@ readReplaceIni(configPath, inheritedSettings, dependencyBranch := "") {
             settingsToPass := settingKey == "subConfigFile" ? settings.clone() : {}
 
             ; Find out whether the provided path is a relative or a full path and make a recurse call
-            relativeConfigPath := relativePathRoot . settingValue
-            
-            if (fileExist(relativeConfigPath)){
-                readReplaceIni(relativeConfigPath, settingsToPass, dependencyBranch)
-            } else if (fileExist(settingValue)){
-                readReplaceIni(settingValue, settingsToPass, dependencyBranch)
-            } else {
-                errorMessage := "The provided config file cannot be found`n"
-                errorMessage .= "Neither as a relative path '" . relativeConfigPath . "'`n"
-                errorMessage .= "Nor as a full path '" . settingValue . "'"
-                configParsingError(errorMessage, configFileName, A_Index)
-            }
+            innerConfigPath := resolveConfigPath(relativePathRoot, settingValue)
 
+            if (innerConfigPath["error"])
+                configParsingError(innerConfigPath["message"], configFileName, A_Index)
+
+            readReplaceIni(innerConfigPath, settingsToPass, dependencyBranch)
         } else {
             ; Replaces
             Hotstring(":" . settings["replaceModifiers"] . ":" . replaceKey, replaceValue)
@@ -228,4 +233,78 @@ configParsingError(message, configFile := "", line := "") {
     MsgBox, 0x40030, HeckR_Replace - Error, %errorMessage%
 
     ExitApp -1
+}
+
+; Try to resolve the given folder path as a relative path, or as a full path
+resolveFolderPath(rootPath, folderToResolve) {
+    ; Create possible paths
+    relativeFolderPath := rootPath . folderToResolve
+
+    ; Try possible paths
+    resultFolder := ""
+    if (InStr(fileExist(relativeFolderPath), "D"))
+        resultFolder :=  relativeFolderPath
+    else if (InStr(fileExist(folderToResolve), "D"))
+        resultFolder :=  folderToResolve
+    
+    if (resultFolder)
+        return resultFolder . (SubStr(resultFolder, 0) == "\" ? "" : "\")
+    
+    ; Returning error object
+    errorMessage := "The provided path cannot be found`n"
+    errorMessage .= "Neither as a relative path '" . relativeFolderPath . "'`n"
+    errorMessage .= "Nor as a full path '" . folderToResolve . "'"
+
+    errorObj := {}
+    errorObj["error"] := true
+    errorObj["message"] := errorMessage
+
+    return errorObj
+}
+
+; Try to resolve the given file path as a relative path, a relative sub path, or as a full path
+resolveConfigPath(rootPath, fileToResolve) {
+    hasExtension := RegExMatch(fileToResolve, ".ini$") > 0
+    
+    RegExMatch(fileToResolve, "O)(?<configNameNoExt>[^\\]+?)(.ini)?$", configMatch)
+    configNameNoExt := configMatch["configNameNoExt"]
+
+    ; Create possible paths
+    relativeConfigPath := ""
+    relativeSubConfigPath := ""
+    fullConfigPath := ""
+
+    if (hasExtension) {
+        relativeConfigPath := rootPath . fileToResolve
+        fullConfigPath := fileToResolve
+    } else {
+        relativeConfigPath := rootPath . fileToResolve . ".ini"
+        relativeSubConfigPath := rootPath . fileToResolve . "\" . configNameNoExt . ".ini"
+        fullConfigPath := fileToResolve . ".ini"
+    }
+    
+    ; Try possible paths
+    if (isFile(relativeConfigPath))
+        return relativeConfigPath
+    else if (isFile(relativeSubConfigPath))
+        return relativeSubConfigPath
+    else if (isFile(fullConfigPath))
+        return fullConfigPath
+
+    ; Returning error object
+    errorMessage := "The provided path cannot be found`n"
+    errorMessage .= "Neither as a relative path '" . relativeConfigPath . "'`n"
+    if (relativeSubConfigPath)
+        errorMessage .= "Nor as a relative path '" . relativeSubConfigPath . "'`n"
+    errorMessage .= "Nor as a full path '" . fullConfigPath . "'"
+
+    errorObj := {}
+    errorObj["error"] := true
+    errorObj["message"] := errorMessage
+
+    return errorObj
+}
+
+isFile(filePath) {
+    return (fileExist(filePath) && !InStr(fileExist(filePath), "D"))
 }
