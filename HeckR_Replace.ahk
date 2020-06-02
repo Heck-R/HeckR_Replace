@@ -1,5 +1,7 @@
 ﻿#SingleInstance, Force
 
+#Include <HeckerFunc>
+
 ;------------------------------------------------
 
 mainConfigFilePath := regexreplace(A_ScriptFullPath, "\.[^.]+$",".ini")
@@ -16,7 +18,7 @@ readReplaceIni(mainConfigFilePath, {})
 
 ;------------------------------------------------
 
-readReplaceIni(configPath, inheritedSettings) {
+readReplaceIni(configPath, inheritedSettings, dependencyBranch := "") {
     ; Init
     sectionName := ""
     settings := inheritedSettings.clone()
@@ -27,9 +29,26 @@ readReplaceIni(configPath, inheritedSettings) {
     configFileName := pathMatch["configFileName"]
 
     relativePathRoot := configFolder
+
+    ; Check for circular dependencies
+    if (dependencyBranch == "")
+        dependencyBranch := []
+    for dependencyIndex, dependencyPath in dependencyBranch {
+        if (dependencyPath == configPath){
+            errorMessage := "Circular dependencies detected`n"
+            errorMessage .= "`n"
+            errorMessage .= "Dependecy list:`n"
+            errorMessage .= join("`n", dependencyBranch*)
+            errorMessage .= "`n"
+            errorMessage .= "`n"
+            errorMessage .= "The next dependency would be '" . configPath . "', but it was already dependency number " . dependencyIndex
+            configParsingError(errorMessage, configFileName)
+        }
+    }
+    dependencyBranch.push(configPath)
     
     ; Read the config file line by line
-    Loop, read, %configPath%
+    loop, read, %configPath%
     {
         lineParts := splitEscapedString(A_LoopReadLine, ";")
         replaceCommand := lineParts[1]
@@ -99,9 +118,9 @@ readReplaceIni(configPath, inheritedSettings) {
             relativeConfigPath := relativePathRoot . settingValue
             
             if (fileExist(relativeConfigPath)){
-                readReplaceIni(relativeConfigPath, settingsToPass)
+                readReplaceIni(relativeConfigPath, settingsToPass, dependencyBranch)
             } else if (fileExist(settingValue)){
-                readReplaceIni(settingValue, settingsToPass)
+                readReplaceIni(settingValue, settingsToPass, dependencyBranch)
             } else {
                 errorMessage := "The provided config file cannot be found`n"
                 errorMessage .= "Neither as a relative path '" . relativeConfigPath . "'`n"
