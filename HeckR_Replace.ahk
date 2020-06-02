@@ -25,11 +25,12 @@ readReplaceIni(configPath, inheritedSettings) {
     regExMatch(configPath, "O)^(?<configFolder>.+\\)(?<configFileName>[^\\]+)$", pathMatch)
     configFolder := pathMatch["configFolder"]
     configFileName := pathMatch["configFileName"]
+
+    relativePathRoot := configFolder
     
     ; Read the config file line by line
     Loop, read, %configPath%
     {
-        
         lineParts := splitEscapedString(A_LoopReadLine, ";")
         replaceCommand := lineParts[1]
         ; The whole line is a comment or empty
@@ -79,6 +80,8 @@ readReplaceIni(configPath, inheritedSettings) {
             ; Update settings
             if (settingKey == "replaceModifiers")
                 settings[settingKey] := settings["replaceModifiers"] . settingValue
+            else if (settingKey == "relativePathRoot")
+                relativePathRoot := configFolder . settingValue . (SubStr(settingValue, 0) == "\" ? "" : "\")
             else
                 settings[settingKey] := settingValue
             
@@ -93,7 +96,7 @@ readReplaceIni(configPath, inheritedSettings) {
             settingsToPass := settingKey == "subConfigFile" ? settings.clone() : {}
 
             ; Find out whether the provided path is a relative or a full path and make a recurse call
-            relativeConfigPath := configFolder . settingValue
+            relativeConfigPath := relativePathRoot . settingValue
             
             if (fileExist(relativeConfigPath)){
                 readReplaceIni(relativeConfigPath, settingsToPass)
