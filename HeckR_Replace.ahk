@@ -18,14 +18,17 @@ if (!FileExist(mainConfigFilePath)) {
     configParsingError(errorMessage)
 }
 
-readReplaceIni(mainConfigFilePath, {})
+readReplaceIni(mainConfigFilePath)
 
 ;------------------------------------------------
 
-readReplaceIni(configPath, inheritedSettings, dependencyBranch := "") {
+readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
     ; Init
     sectionName := ""
-    settings := inheritedSettings.clone()
+    
+    settings := {}
+    settings["config"] := inheritedSettings == "" ? {} : inheritedSettings["config"].clone()
+    settings["replace"] := inheritedSettings == "" ? {} : inheritedSettings["replace"].clone()
 
     ; Split the ini file path to folder and file name
     regExMatch(configPath, "O)^(?<configFolder>.+\\)(?<configFileName>[^\\]+)$", pathMatch)
@@ -84,9 +87,9 @@ readReplaceIni(configPath, inheritedSettings, dependencyBranch := "") {
         replaceValue := replaceParts[2]
 
         ; Trim
-        if (settings["trimReplaceKeys"] == "true")
+        if (settings["config"]["trimReplaceKeys"] == "true")
             replaceKey := trimEscapedString(replaceKey)
-        if (settings["trimReplaceValues"] == "true")
+        if (settings["config"]["trimReplaceValues"] == "true")
             replaceValue := trimEscapedString(replaceValue)
 
         ; Resolve escaping
@@ -94,35 +97,49 @@ readReplaceIni(configPath, inheritedSettings, dependencyBranch := "") {
         replaceValue := unescapeString(replaceValue)
 
         
-        if (sectionName == "replace settings") {
-            ; Settings
+        if (sectionName == "config settings") {
+            ; Config settings
             
             ; Trim
-            settingKey := trimEscapedString(replaceKey)
-            settingValue := trimEscapedString(replaceValue)
+            configSettingKey := trimEscapedString(replaceKey)
+            configSettingValue := trimEscapedString(replaceValue)
+
             ; Update settings
-            if (settingKey == "replaceModifiers")
-                settings[settingKey] := settings["replaceModifiers"] . settingValue
-            else if (settingKey == "relativePathRoot") {
-                relativePathRoot := resolveFolderPath(configFolder, settingValue)
+            if (configSettingKey == "relativePathRoot") {
+                relativePathRoot := resolveFolderPath(configFolder, configSettingValue)
 
                 if (relativePathRoot["error"])
                     configParsingError(relativePathRoot["message"], configFileName, A_Index)
             } else
-                settings[settingKey] := settingValue
+                settings["config"][configSettingKey] := configSettingValue
+            
+        } else if (sectionName == "replace settings") {
+            ; Replace settings
+            
+            ; Trim
+            replaceSettingKey := trimEscapedString(replaceKey)
+            replaceSettingValue := trimEscapedString(replaceValue)
+
+            ; Update settings
+            if (replaceSettingKey == "replaceModifiers")
+                settings["replace"][replaceSettingKey] := settings["replace"][replaceSettingKey] . replaceSettingValue
+            else
+                settings["replace"][replaceSettingKey] := replaceSettingValue
             
         } else if (sectionName == "replace configs") {
             ; Replace configs
             
             ; Trim
-            settingKey := trimEscapedString(replaceKey)
-            settingValue := trimEscapedString(replaceValue)
+            replaceConfigKey := trimEscapedString(replaceKey)
+            replaceConfigValue := trimEscapedString(replaceValue)
 
             ; Settings to be passed to linked config
-            settingsToPass := settingKey == "subConfigFile" ? settings.clone() : {}
+            settingsToPass := {}
+            settingsToPass["config"] := replaceConfigKey == "subConfigFile" ? settings["config"].clone() : {}
+            settingsToPass["replace"] := replaceConfigKey == "subConfigFile" ? settings["replace"].clone() : {}
 
             ; Find out whether the provided path is a relative or a full path and make a recurse call
-            innerConfigPath := resolveConfigPath(relativePathRoot, settingValue)
+            innerConfigPath := resolveConfigPath(relativePathRoot, replaceConfigValue)
 
             if (innerConfigPath["error"])
                 configParsingError(innerConfigPath["message"], configFileName, A_Index)
@@ -130,7 +147,8 @@ readReplaceIni(configPath, inheritedSettings, dependencyBranch := "") {
             readReplaceIni(innerConfigPath, settingsToPass, dependencyBranch)
         } else {
             ; Replaces
-            Hotstring(":" . settings["replaceModifiers"] . ":" . replaceKey, replaceValue)
+            Hotstring(":" . settings["replace"]["replaceModifiers"] . ":" . replaceKey, replaceValue)
+            msgbox % "(:" . settings["replace"]["replaceModifiers"] . ":" . replaceKey . ")"
         }
 
     }
