@@ -4,13 +4,8 @@
 
 ;------------------------------------------------
 
-FALSE_WORKING_DIRECTORY_NAME := "FalseWorkingDirectory"
-
-if (!fileExist(FALSE_WORKING_DIRECTORY_NAME) || !InStr(fileExist(FALSE_WORKING_DIRECTORY_NAME), "D"))
-    FileCreateDir, %FALSE_WORKING_DIRECTORY_NAME%
-if (!InStr(fileExist(FALSE_WORKING_DIRECTORY_NAME), "H"))
-    FileSetAttrib, +H, %FALSE_WORKING_DIRECTORY_NAME%
-SetWorkingDir, %FALSE_WORKING_DIRECTORY_NAME%
+NONEXISTENT_WORKING_DIRECTORY_NAME := "NonexistentWorkingDirectory"
+SetWorkingDir, %NONEXISTENT_WORKING_DIRECTORY_NAME%
 
 ;------------------------------------------------
 mainConfigFilePath := regexreplace(A_ScriptFullPath, "\.[^.]+$",".ini")
