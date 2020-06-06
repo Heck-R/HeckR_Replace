@@ -121,7 +121,10 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
             replaceSettingValue := trimEscapedString(replaceValue)
 
             ; Update settings
-            if (replaceSettingKey == "replaceModifiers")
+            if (replaceSettingKey == "wrapper"){
+                settings["replace"][replaceSettingKey . "Left"] := replaceSettingValue
+                settings["replace"][replaceSettingKey . "Right"] := replaceSettingValue
+            } else if (replaceSettingKey == "modifiers")
                 settings["replace"][replaceSettingKey] := settings["replace"][replaceSettingKey] . replaceSettingValue
             else
                 settings["replace"][replaceSettingKey] := replaceSettingValue
@@ -146,9 +149,13 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
 
             readReplaceIni(innerConfigPath, settingsToPass, dependencyBranch)
         } else {
-            ; Replaces
-            Hotstring(":" . settings["replace"]["replaceModifiers"] . ":" . replaceKey, replaceValue)
-            msgbox % "(:" . settings["replace"]["replaceModifiers"] . ":" . replaceKey . ")"
+            ; Create new replace
+            customHotstringModifierSection := ":" . settings["replace"]["modifiers"] . ":"
+            customHotstringMainSection := settings["replace"]["wrapperLeft"] . replaceKey . settings["replace"]["wrapperRight"]
+
+            customHotstring := customHotstringModifierSection . customHotstringMainSection
+
+            Hotstring(customHotstring, replaceValue)
         }
 
     }
