@@ -18,12 +18,18 @@ if (!FileExist(mainConfigFilePath)) {
     configParsingError(errorMessage)
 }
 
+toggleAbleSections := {}
+alternativeSectionDisablers := {}
+
 readReplaceIni(mainConfigFilePath)
 
 ;------------------------------------------------
 
 readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
     ; Init
+    global toggleAbleSections
+    global alternativeSectionDisablers
+
     sectionName := ""
     
     settings := {}
@@ -65,7 +71,36 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
         
         ; Section marker
         if (regExMatch(replaceCommand, "O)^\s*\[(?<sectionName>.+)\]\s*$", sectionMatch) > 0) {
+            ; Set current section name
             sectionName := format("{:L}", unescapeString(sectionMatch["sectionName"]))
+
+            ; Register section as toggle able
+            if (settings["replace"]["toggleAbleSections"] == "true" && !toggleAbleSections.hasKey(sectionName)){
+                ; Add section replace list
+                toggleAbleSections[sectionName] := []
+
+                ; Create section toggler hotstrings
+                sectionTogglerHotstring := ":*X:" . settings["replace"]["toggleWrapperLeft"] . sectionName . settings["replace"]["toggleWrapperRight"]
+                ; Create function references (with binded parameters) for replace toggling
+                sectionTogglerInstance := Func("sectionTogglerBase").Bind(sectionName)
+                ; Add section toggler hotstrings
+                Hotstring(sectionTogglerHotstring, sectionTogglerInstance)
+
+                ; Add alternative disable
+                if (settings["replace"].hasKey("alternativeSectionDisabler") && settings["replace"]["alternativeSectionDisabler"] != "") {
+                    ; Add section name as a section to be disabled with the current alternativeSectionDisabler
+                    if (!alternativeSectionDisablers.hasKey( settings["replace"]["alternativeSectionDisabler"] ))
+                        alternativeSectionDisablers[ settings["replace"]["alternativeSectionDisabler"] ] := []
+                    alternativeSectionDisablers[ settings["replace"]["alternativeSectionDisabler"] ].push(sectionName)
+                    ; Create section toggler hotstrings
+                    alternativeDisableHotstring := ":*X:" . settings["replace"]["alternativeSectionDisabler"]
+                    ; Create function references (with binded parameters) for replace toggling
+                    alternativeDisableInstance := Func("alternativeDisableBase").Bind(settings["replace"]["alternativeSectionDisabler"])
+                    ; Add section toggler hotstrings
+                    Hotstring(alternativeDisableHotstring, alternativeDisableInstance)
+                }
+            }
+
             continue
         }
         
@@ -121,7 +156,7 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
             replaceSettingValue := trimEscapedString(replaceValue)
 
             ; Update settings
-            if (replaceSettingKey == "wrapper"){
+            if (replaceSettingKey == "wrapper" || replaceSettingKey == "toggleWrapper"){
                 settings["replace"][replaceSettingKey . "Left"] := replaceSettingValue
                 settings["replace"][replaceSettingKey . "Right"] := replaceSettingValue
             } else if (replaceSettingKey == "modifiers")
@@ -150,14 +185,45 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
             readReplaceIni(innerConfigPath, settingsToPass, dependencyBranch)
         } else {
             ; Create new replace
-            customHotstringModifierSection := ":" . settings["replace"]["modifiers"] . ":"
-            customHotstringMainSection := settings["replace"]["wrapperLeft"] . replaceKey . settings["replace"]["wrapperRight"]
 
-            customHotstring := customHotstringModifierSection . customHotstringMainSection
+            ; Compose hotstring
+            customHotstringModifierPart := ":" . settings["replace"]["modifiers"] . ":"
+            customHotstringMainPart := settings["replace"]["wrapperLeft"] . replaceKey . settings["replace"]["wrapperRight"]
+            customHotstring := customHotstringModifierPart . customHotstringMainPart
 
-            Hotstring(customHotstring, replaceValue)
+            customHotstringDefaultState := settings["replace"]["toggleAbleSections"] != "true" || settings["replace"]["enableToggleAbleSectionsOnStart"] == "true" ? "On" : "Off"
+
+            ; Register as a toggleable
+            if (settings["replace"]["toggleAbleSections"] == "true")
+                toggleAbleSections[sectionName].push(customHotstring)
+
+            ; Add replace
+            Hotstring(customHotstring, replaceValue, customHotstringDefaultState)
         }
 
+    }
+}
+
+; The base function for toggling sections
+sectionTogglerBase(sectionName) {
+    global toggleAbleSections
+
+    ; Toggle replace
+    for hotstringIndex, hotstringDefinition in toggleAbleSections[sectionName] {
+        Hotstring(hotstringDefinition, , "Toggle")
+    }
+}
+
+; The base function for toggling sections
+alternativeDisableBase(alternativeDisableHotstringBase) {
+    global toggleAbleSections
+    global alternativeSectionDisablers
+
+    ; Disable replace
+    for sectionIndex, sectionName in alternativeSectionDisablers[alternativeDisableHotstringBase] {
+        for hotstringIndex, hotstringDefinition in toggleAbleSections[sectionName] {
+            Hotstring(hotstringDefinition, , "Off")
+        }
     }
 }
 
