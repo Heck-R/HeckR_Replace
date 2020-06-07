@@ -5,6 +5,12 @@
 ;------------------------------------------------
 ; Setting constants
 
+; Special section names which should be treated differently from standard replace sections
+SPECIAL_SECTIONS := {}
+SPECIAL_SECTIONS["configSettings"] := "config settings"
+SPECIAL_SECTIONS["replaceSettings"] := "replace settings"
+SPECIAL_SECTIONS["replaceConfigs"] := "replace configs"
+
 ;------------------------------------------------
 ; Setting variables
 
@@ -43,6 +49,7 @@ return
 
 readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
     ; Init
+    global SPECIAL_SECTIONS
     global toggleAbleSections
     global alternativeSectionDisablers
 
@@ -144,8 +151,7 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
         replaceKey := unescapeString(replaceKey)
         replaceValue := unescapeString(replaceValue)
 
-        
-        if (sectionName == "config settings") {
+        if (sectionName == SPECIAL_SECTIONS["configSettings"]) {
             ; Config settings
             
             ; Trim
@@ -161,7 +167,7 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
             } else
                 settings["config"][configSettingKey] := configSettingValue
             
-        } else if (sectionName == "replace settings") {
+        } else if (sectionName == SPECIAL_SECTIONS["replaceSettings"]) {
             ; Replace settings
             
             ; Trim
@@ -177,7 +183,7 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
             else
                 settings["replace"][replaceSettingKey] := replaceSettingValue
             
-        } else if (sectionName == "replace configs") {
+        } else if (sectionName == SPECIAL_SECTIONS["replaceConfigs"]) {
             ; Replace configs
             
             ; Trim
@@ -217,6 +223,9 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
     }
 }
 
+;------------------------------------------------
+; Template functions for hotstrings
+
 ; The base function for toggling sections
 sectionTogglerBase(sectionName) {
     global toggleAbleSections
@@ -239,6 +248,9 @@ alternativeDisableBase(alternativeDisableHotstringBase) {
         }
     }
 }
+
+;------------------------------------------------
+; String escaping handling
 
 ; Split the given string with the provided delimiter unless it is escaped by the provided escape character
 splitEscapedString(string, delim := "`n", escChar := "``") {
@@ -311,28 +323,8 @@ unescapeString(string, escChar := "``") {
     return unescapedString
 }
 
-configParsingError(message, configFile := "", line := "") {
-    errorMessage := ""
-    
-    errorMessage .= "Error during the parsing of the config files!`n"
-    errorMessage .= "`n"
-    if (configFile != "") {
-        errorMessage .= "Place of error:`n"
-        errorMessage .= "In file '" . configFile . "'`n"
-        if (line != "")
-            errorMessage .= "At line '" . line . "'`n"
-    }
-    if (configFile != "")
-        errorMessage .= "`n"
-    errorMessage .= "Cause:`n"
-    errorMessage .= message . "`n"
-    errorMessage .= "`n"
-    errorMessage .= "The program exits"
-
-    MsgBox, 0x40030, HeckR_Replace - Error, %errorMessage%
-
-    ExitApp -1
-}
+;------------------------------------------------
+; Path handling
 
 ; Try to resolve the given folder path as a relative path, or as a full path
 resolveFolderPath(rootPath, folderToResolve) {
@@ -406,4 +398,30 @@ resolveConfigPath(rootPath, fileToResolve) {
 
 isFile(filePath) {
     return (fileExist(filePath) && !InStr(fileExist(filePath), "D"))
+}
+
+;------------------------------------------------
+; Error handling
+
+configParsingError(message, configFile := "", line := "") {
+    errorMessage := ""
+    
+    errorMessage .= "Error during the parsing of the config files!`n"
+    errorMessage .= "`n"
+    if (configFile != "") {
+        errorMessage .= "Place of error:`n"
+        errorMessage .= "In file '" . configFile . "'`n"
+        if (line != "")
+            errorMessage .= "At line '" . line . "'`n"
+    }
+    if (configFile != "")
+        errorMessage .= "`n"
+    errorMessage .= "Cause:`n"
+    errorMessage .= message . "`n"
+    errorMessage .= "`n"
+    errorMessage .= "The program exits"
+
+    MsgBox, 0x40030, HeckR_Replace - Error, %errorMessage%
+
+    ExitApp -1
 }
