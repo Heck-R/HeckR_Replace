@@ -289,7 +289,7 @@ unescapeString(string, escChar := "``") {
     unescapedString := string
     unescapedString := StrReplace(unescapedString, "``n", "`n")
     unescapedString := StrReplace(unescapedString, "``r", "`r")
-    unescapedString := StrReplace(unescapedString, "``s", "`s")
+    unescapedString := StrReplace(unescapedString, "``s", " ")
     unescapedString := StrReplace(unescapedString, "``t", "`t")
     unescapedString := RegExReplace(unescapedString, "``(.)", "$1")
     return unescapedString
