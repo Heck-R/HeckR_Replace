@@ -3,11 +3,26 @@
 #Include <HeckerFunc>
 
 ;------------------------------------------------
-
-NONEXISTENT_WORKING_DIRECTORY_NAME := "NonexistentWorkingDirectory"
-SetWorkingDir, %NONEXISTENT_WORKING_DIRECTORY_NAME%
+; Setting constants
 
 ;------------------------------------------------
+; Setting variables
+
+; The set of sections which can be toggled, and the replaces associated with them
+; Example: {toggleAbleSectionName1: [replaceHotstring1, replaceHotstring2, ...], ...}
+toggleAbleSections := {}
+
+; The set of alternative disable hotstrings, and the section names associated with them
+; Example: {alternativeDisableHotstring: [sectionNameToDisable1, sectionNameToDisable2, ...], ...}
+alternativeSectionDisablers := {}
+
+;------------------------------------------------
+; Prepare environment
+
+; Set working dir to a non-eyistent path, so relative paths in the configs will not yield undesired results
+SetWorkingDir, NonexistentWorkingDirectory
+
+; Main config ini
 mainConfigFilePath := regexreplace(A_ScriptFullPath, "\.[^.]+$",".ini")
 
 if (!FileExist(mainConfigFilePath)) {
@@ -18,15 +33,11 @@ if (!FileExist(mainConfigFilePath)) {
     configParsingError(errorMessage)
 }
 
-; The set of sections which can be toggled, and the replaces associated with them
-; Example: {toggleAbleSectionName1: [replaceHotstring1, replaceHotstring2, ...], ...}
-toggleAbleSections := {}
-
-; The set of alternative disable hotstrings, and the section names associated with them
-; Example: {alternativeDisableHotstring: [sectionNameToDisable1, sectionNameToDisable2, ...], ...}
-alternativeSectionDisablers := {}
+;------------------------------------------------
+; Read replaces
 
 readReplaceIni(mainConfigFilePath)
+return
 
 ;------------------------------------------------
 
