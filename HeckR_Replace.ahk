@@ -18,7 +18,12 @@ if (!FileExist(mainConfigFilePath)) {
     configParsingError(errorMessage)
 }
 
+; The set of sections which can be toggled, and the replaces associated with them
+; Example: {toggleAbleSectionName1: [replaceHotstring1, replaceHotstring2, ...], ...}
 toggleAbleSections := {}
+
+; The set of alternative disable hotstrings, and the section names associated with them
+; Example: {alternativeDisableHotstring: [sectionNameToDisable1, sectionNameToDisable2, ...], ...}
 alternativeSectionDisablers := {}
 
 readReplaceIni(mainConfigFilePath)
