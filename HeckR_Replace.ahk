@@ -250,80 +250,6 @@ alternativeDisableBase(alternativeDisableHotstringBase) {
 }
 
 ;------------------------------------------------
-; String escaping handling
-
-; Split the given string with the provided delimiter unless it is escaped by the provided escape character
-splitEscapedString(string, delim := "`n", escChar := "``") {
-    lastSeparator := 0
-    splittedStrings := []
-
-    escaping := false
-    Loop, Parse, string
-    {
-        ; Skip character if it is being escaped
-        if (escaping == true){
-            escaping := false
-            continue
-        }
-        ; Note that the next character will be escaped
-        if (A_LoopField == escChar) {
-            escaping := true
-            continue
-        }
-
-        ; Split if a delimiter is found
-        if (A_LoopField == delim) {
-            splittedStrings.push(subStr(string, lastSeparator +1, A_Index - lastSeparator -1))
-            lastSeparator := A_Index
-        }
-    }
-
-    if (lastSeparator != strLen(string))
-        splittedStrings.push(subStr(string, lastSeparator +1, strLen(string) - lastSeparator))
-
-    return splittedStrings
-}
-
-; Trim not escaped whitespaces from both side
-trimEscapedString(string, escChar := "``") {
-    trimmedString := LTrim(string)
-
-    if (trimmedString == "")
-        return ""
-    
-    ; Searching for first non whitespace
-    checkCharPos := strLen(trimmedString)
-    while ( checkCharPos > 0 && regExMatch( subStr(trimmedString, checkCharPos, 1) , "\s") > 0 )
-        checkCharPos--
-    firstWhitespace := checkCharPos + 1
-
-    ; Counting escapes
-    escCharNum := 0
-    while (subStr(trimmedString, checkCharPos - escCharNum, 1) == escChar){
-        checkCharPos--
-        escCharNum++
-    }
-
-    ; Trimming the end with consideration for escaped whitespaces
-    escapeModifier := mod(escCharNum, 2) == 0 ? -1 : 0
-    firstActualNonWhitespace := firstWhitespace + escapeModifier
-    trimmedString := subStr(trimmedString, 1, firstActualNonWhitespace)
-
-    return trimmedString
-}
-
-; Remove escape characters and replace the escaped character with its escaped version if needed
-unescapeString(string, escChar := "``") {
-    unescapedString := string
-    unescapedString := StrReplace(unescapedString, "``n", "`n")
-    unescapedString := StrReplace(unescapedString, "``r", "`r")
-    unescapedString := StrReplace(unescapedString, "``s", " ")
-    unescapedString := StrReplace(unescapedString, "``t", "`t")
-    unescapedString := RegExReplace(unescapedString, "``(.)", "$1")
-    return unescapedString
-}
-
-;------------------------------------------------
 ; Path handling
 
 ; Try to resolve the given folder path as a relative path, or as a full path
@@ -394,10 +320,6 @@ resolveConfigPath(rootPath, fileToResolve) {
     errorObj["message"] := errorMessage
 
     return errorObj
-}
-
-isFile(filePath) {
-    return (fileExist(filePath) && !InStr(fileExist(filePath), "D"))
 }
 
 ;------------------------------------------------
