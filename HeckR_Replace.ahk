@@ -79,11 +79,9 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
                 ; Add section replace list
                 toggleAbleSections[sectionName] := []
 
-                ; Create section toggler hotstrings
+                ; Create a section toggler hotstrings with a preparameterized function
                 sectionTogglerHotstring := ":*X:" . settings["replace"]["toggleWrapperLeft"] . sectionName . settings["replace"]["toggleWrapperRight"]
-                ; Create function references (with binded parameters) for replace toggling
                 sectionTogglerInstance := Func("sectionTogglerBase").Bind(sectionName)
-                ; Add section toggler hotstrings
                 Hotstring(sectionTogglerHotstring, sectionTogglerInstance)
 
                 ; Add alternative disable
@@ -92,11 +90,10 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
                     if (!alternativeSectionDisablers.hasKey( settings["replace"]["alternativeSectionDisabler"] ))
                         alternativeSectionDisablers[ settings["replace"]["alternativeSectionDisabler"] ] := []
                     alternativeSectionDisablers[ settings["replace"]["alternativeSectionDisabler"] ].push(sectionName)
-                    ; Create section toggler hotstrings
+                    
+                    ; Create a section toggler hotstrings with a preparameterized function
                     alternativeDisableHotstring := ":*X:" . settings["replace"]["alternativeSectionDisabler"]
-                    ; Create function references (with binded parameters) for replace toggling
                     alternativeDisableInstance := Func("alternativeDisableBase").Bind(settings["replace"]["alternativeSectionDisabler"])
-                    ; Add section toggler hotstrings
                     Hotstring(alternativeDisableHotstring, alternativeDisableInstance)
                 }
             }
