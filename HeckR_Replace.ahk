@@ -98,7 +98,7 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
             sectionName := format("{:L}", unescapeString(sectionMatch["sectionName"]))
 
             ; Register section as toggle able
-            if (settings["replace"]["toggleAbleSections"] == "true" && !toggleAbleSections.hasKey(sectionName)){
+            if (settings["replace"]["toggleAbleSections"] == "true" && !toggleAbleSections.hasKey(sectionName) && !hasValue(SPECIAL_SECTIONS, sectionName)){
                 ; Add section replace list
                 toggleAbleSections[sectionName] := []
 
