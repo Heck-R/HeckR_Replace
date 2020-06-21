@@ -40,6 +40,18 @@ if (!FileExist(mainConfigFilePath)) {
 }
 
 ;------------------------------------------------
+; Default settings
+
+DEFAULT_SETTINGS := {}
+
+DEFAULT_SETTINGS["config"] := {}
+DEFAULT_SETTINGS["config"]["trimReplaceKeys"] := "true"
+DEFAULT_SETTINGS["config"]["trimReplaceValues"] := "true"
+
+DEFAULT_SETTINGS["replace"] := {}
+
+
+;------------------------------------------------
 ; Read replaces
 
 readReplaceIni(mainConfigFilePath)
@@ -50,14 +62,16 @@ return
 readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
     ; Init
     global SPECIAL_SECTIONS
+    global DEFAULT_SETTINGS
     global toggleAbleSections
     global alternativeSectionDisablers
 
     sectionName := ""
     
     settings := {}
-    settings["config"] := inheritedSettings == "" ? {} : inheritedSettings["config"].clone()
-    settings["replace"] := inheritedSettings == "" ? {} : inheritedSettings["replace"].clone()
+    objectAssign(settings, DEFAULT_SETTINGS)
+    if (inheritedSettings != "")
+        objectAssign(settings, inheritedSettings)
 
     ; Split the ini file path to folder and file name
     regExMatch(configPath, "O)^(?<configFolder>.+\\)(?<configFileName>[^\\]+)$", pathMatch)
@@ -100,10 +114,14 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
             ; Register section as toggle able
             if (settings["replace"]["toggleAbleSections"] == "true" && !toggleAbleSections.hasKey(sectionName) && !hasValue(SPECIAL_SECTIONS, sectionName)){
                 ; Add section replace list
-                toggleAbleSections[sectionName] := []
+                toggleAbleSections[sectionName] := {}
+                toggleAbleSections[sectionName]["state"] := settings["replace"]["toggleAbleSections"] != "true" || settings["replace"]["enableToggleAbleSectionsOnStart"] == "true" ? "On" : "Off"
+                toggleAbleSections[sectionName]["hotstrings"] := {}
 
                 ; Create a section toggler hotstrings with a preparameterized function
-                sectionTogglerHotstring := ":*X:" . settings["replace"]["toggleWrapperLeft"] . sectionName . settings["replace"]["toggleWrapperRight"]
+                sectionTogglerHotstringModifierPart := ":" . settings["replace"]["modifiers"] . "X:"
+                sectionTogglerHotstringMainPart := settings["replace"]["toggleWrapperLeft"] . sectionName . settings["replace"]["toggleWrapperRight"]
+                sectionTogglerHotstring := sectionTogglerHotstringModifierPart . sectionTogglerHotstringMainPart
                 sectionTogglerInstance := Func("sectionTogglerBase").Bind(sectionName)
                 Hotstring(sectionTogglerHotstring, sectionTogglerInstance)
 
@@ -115,7 +133,9 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
                     alternativeSectionDisablers[ settings["replace"]["alternativeSectionDisabler"] ].push(sectionName)
                     
                     ; Create a section toggler hotstrings with a preparameterized function
-                    alternativeDisableHotstring := ":*X:" . settings["replace"]["alternativeSectionDisabler"]
+                    alternativeDisableHotstringModifierPart := ":" . settings["replace"]["modifiers"] . "X:"
+                    alternativeDisableHotstringMainPart := settings["replace"]["alternativeSectionDisabler"]
+                    alternativeDisableHotstring := alternativeDisableHotstringModifierPart . alternativeDisableHotstringMainPart
                     alternativeDisableInstance := Func("alternativeDisableBase").Bind(settings["replace"]["alternativeSectionDisabler"])
                     Hotstring(alternativeDisableHotstring, alternativeDisableInstance)
                 }
@@ -141,22 +161,15 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
         replaceKey := replaceParts[1]
         replaceValue := replaceParts[2]
 
-        ; Trim
-        if (settings["config"]["trimReplaceKeys"] == "true")
-            replaceKey := trimEscapedString(replaceKey)
-        if (settings["config"]["trimReplaceValues"] == "true")
-            replaceValue := trimEscapedString(replaceValue)
-
-        ; Resolve escaping
-        replaceKey := unescapeString(replaceKey)
-        replaceValue := unescapeString(replaceValue)
-
         if (sectionName == SPECIAL_SECTIONS["configSettings"]) {
             ; Config settings
             
             ; Trim
             configSettingKey := trimEscapedString(replaceKey)
             configSettingValue := trimEscapedString(replaceValue)
+            ; Resolve escaping
+            configSettingKey := unescapeString(configSettingKey)
+            configSettingValue := unescapeString(configSettingValue)
 
             ; Update settings
             if (configSettingKey == "relativePathRoot") {
@@ -173,6 +186,9 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
             ; Trim
             replaceSettingKey := trimEscapedString(replaceKey)
             replaceSettingValue := trimEscapedString(replaceValue)
+            ; Resolve escaping
+            replaceSettingKey := unescapeString(replaceSettingKey)
+            replaceSettingValue := unescapeString(replaceSettingValue)
 
             ; Update settings
             if (replaceSettingKey == "wrapper" || replaceSettingKey == "toggleWrapper"){
@@ -189,11 +205,14 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
             ; Trim
             replaceConfigKey := trimEscapedString(replaceKey)
             replaceConfigValue := trimEscapedString(replaceValue)
+            ; Resolve escaping
+            replaceConfigKey := unescapeString(replaceConfigKey)
+            replaceConfigValue := unescapeString(replaceConfigValue)
 
             ; Settings to be passed to linked config
             settingsToPass := {}
-            settingsToPass["config"] := replaceConfigKey == "subConfigFile" ? settings["config"].clone() : {}
-            settingsToPass["replace"] := replaceConfigKey == "subConfigFile" ? settings["replace"].clone() : {}
+            if (replaceConfigKey == "subConfigFile")
+                objectAssign(settingsToPass, settings)
 
             ; Find out whether the provided path is a relative or a full path and make a recurse call
             innerConfigPath := resolveConfigPath(relativePathRoot, replaceConfigValue)
@@ -205,6 +224,16 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
         } else {
             ; Create new replace
 
+            ; Trim
+            if (settings["config"]["trimReplaceKeys"] == "true")
+                replaceKey := trimEscapedString(replaceKey)
+            if (settings["config"]["trimReplaceValues"] == "true")
+                replaceValue := trimEscapedString(replaceValue)
+
+            ; Resolve escaping
+            replaceKey := unescapeString(replaceKey)
+            replaceValue := unescapeString(replaceValue)
+
             ; Compose hotstring
             customHotstringModifierPart := ":" . settings["replace"]["modifiers"] . ":"
             customHotstringMainPart := settings["replace"]["wrapperLeft"] . replaceKey . settings["replace"]["wrapperRight"]
@@ -214,7 +243,7 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
 
             ; Register as a toggleable
             if (settings["replace"]["toggleAbleSections"] == "true")
-                toggleAbleSections[sectionName].push(customHotstring)
+                toggleAbleSections[sectionName]["hotstrings"][customHotstring] := replaceValue
 
             ; Add replace
             Hotstring(customHotstring, replaceValue, customHotstringDefaultState)
@@ -229,10 +258,10 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
 ; The base function for toggling sections
 sectionTogglerBase(sectionName) {
     global toggleAbleSections
-
     ; Toggle replace
-    for hotstringIndex, hotstringDefinition in toggleAbleSections[sectionName] {
-        Hotstring(hotstringDefinition, , "Toggle")
+    toggleAbleSections[sectionName]["state"] := toggleAbleSections[sectionName]["state"] == "Off" ? "On" : "Off"
+    for customHotstring, replaceValue in toggleAbleSections[sectionName]["hotstrings"] {
+        Hotstring(customHotstring, replaceValue, toggleAbleSections[sectionName]["state"])
     }
 }
 
@@ -242,11 +271,10 @@ alternativeDisableBase(alternativeDisableHotstringBase) {
     global alternativeSectionDisablers
 
     ; Disable replace
-    for sectionIndex, sectionName in alternativeSectionDisablers[alternativeDisableHotstringBase] {
-        for hotstringIndex, hotstringDefinition in toggleAbleSections[sectionName] {
-            Hotstring(hotstringDefinition, , "Off")
-        }
-    }
+    for sectionIndex, sectionName in alternativeSectionDisablers[alternativeDisableHotstringBase]
+        if (toggleAbleSections[sectionName]["state"] == "On")
+            for customHotstring, replaceValue in toggleAbleSections[sectionName]["hotstrings"]
+                Hotstring(customHotstring, , "Off")
 }
 
 ;------------------------------------------------
