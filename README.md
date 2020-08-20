@@ -16,7 +16,13 @@ The configuration files are similar to [general configuration ini files](https:/
 However neither the sections, not the keys have to be unique, and additional rules apply to some sections where it's mentioned.  \
 Also, the order of sections and keys are important, since the processing of the files are serial, and in case of nested configurations (see [Replace Configs](#replace-configs)) is basically a [depth first search](https://en.wikipedia.org/wiki/Depth-first_search)
 
+### Example
+
 There is an example of a configuration file named `HeckR_Replace_example.ini`, which contains the possible settings, and short explanation comments (after `;`s)
+
+### Premade Replace Collection
+
+Since originally I created this script for myself, I also created a nice collection of replaces along the way, which is also available at [HeckR_Replace_Collection](https://github.com/Heck-R/HeckR_Replace_Collection)
 
 ## Sections
 
