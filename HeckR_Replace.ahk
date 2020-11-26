@@ -272,9 +272,11 @@ alternativeDisableBase(alternativeDisableHotstringBase) {
 
     ; Disable replace
     for sectionIndex, sectionName in alternativeSectionDisablers[alternativeDisableHotstringBase]
-        if (toggleAbleSections[sectionName]["state"] == "On")
+        if (toggleAbleSections[sectionName]["state"] == "On") {
+            toggleAbleSections[sectionName]["state"] := "Off"
             for customHotstring, replaceValue in toggleAbleSections[sectionName]["hotstrings"]
                 Hotstring(customHotstring, , "Off")
+        }
 }
 
 ;------------------------------------------------
