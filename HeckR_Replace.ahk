@@ -116,7 +116,7 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
                 ; Add section replace list
                 toggleAbleSections[sectionName] := {}
                 toggleAbleSections[sectionName]["state"] := settings["replace"]["toggleAbleSections"] != "true" || settings["replace"]["enableToggleAbleSectionsOnStart"] == "true" ? "On" : "Off"
-                toggleAbleSections[sectionName]["hotstrings"] := {}
+                toggleAbleSections[sectionName]["hotstrings"] := []
 
                 ; Create a section toggler hotstrings with a preparameterized function
                 sectionTogglerHotstringModifierPart := ":" . settings["replace"]["modifiers"] . "X:"
@@ -243,7 +243,7 @@ readReplaceIni(configPath, inheritedSettings := "", dependencyBranch := "") {
 
             ; Register as a toggleable
             if (settings["replace"]["toggleAbleSections"] == "true")
-                toggleAbleSections[sectionName]["hotstrings"][customHotstring] := replaceValue
+                toggleAbleSections[sectionName]["hotstrings"].Push({"hotstring": customHotstring, "replaceValue": replaceValue})
 
             ; Add replace
             Hotstring(customHotstring, replaceValue, customHotstringDefaultState)
@@ -260,8 +260,8 @@ sectionTogglerBase(sectionName) {
     global toggleAbleSections
     ; Toggle replace
     toggleAbleSections[sectionName]["state"] := toggleAbleSections[sectionName]["state"] == "Off" ? "On" : "Off"
-    for customHotstring, replaceValue in toggleAbleSections[sectionName]["hotstrings"] {
-        Hotstring(customHotstring, replaceValue, toggleAbleSections[sectionName]["state"])
+    for hotstringIndex, hotstringData in toggleAbleSections[sectionName]["hotstrings"] {
+        Hotstring(hotstringData["hotstring"], hotstringData["replaceValue"], toggleAbleSections[sectionName]["state"])
     }
 }
 
@@ -274,8 +274,8 @@ alternativeDisableBase(alternativeDisableHotstringBase) {
     for sectionIndex, sectionName in alternativeSectionDisablers[alternativeDisableHotstringBase]
         if (toggleAbleSections[sectionName]["state"] == "On") {
             toggleAbleSections[sectionName]["state"] := "Off"
-            for customHotstring, replaceValue in toggleAbleSections[sectionName]["hotstrings"]
-                Hotstring(customHotstring, , "Off")
+            for hotstringIndex, hotstringData in toggleAbleSections[sectionName]["hotstrings"]
+                Hotstring(hotstringData["hotstring"], , "Off")
         }
 }
 
