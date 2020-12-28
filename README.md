@@ -18,7 +18,11 @@ Also, the order of sections and keys are important, since the processing of the 
 
 ### Example
 
-There is an example of a configuration file named `HeckR_Replace_example.ini`, which contains the possible settings, and short explanation comments (after `;`s)
+There is an example of a configuration file named `HeckR_Replace_example.ini`, which contains the possible settings, and short explanation comments (after `;`s)  \
+This ini file is located in the `Replace_Example` folder, along with a few additional configuration files, to make the concept of sub configuration files easier to understand
+
+The example is fully functional, and it can be tried out, by copying the content of the `Replace_Example` folder into the root folder.  \
+(Originally, there is nothing in the repo to overwrite when copying the example. However make sure to back up any user created configuration files before copying, to make sure nothing gets lost)
 
 ### Premade Replace Collection
 
