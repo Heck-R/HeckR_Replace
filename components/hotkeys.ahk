@@ -36,11 +36,16 @@ prepareUnicodeInserion() {
 #if unicodeInsertionActive
 
     Alt up::
+        unicodeInsertionActive := false
+        
+        if (characterCodeInput == "") {
+            return
+        }
+
         if (inputBase == "dec") {
             characterCodeInput := format("{:x}", characterCodeInput)
         }
 
-        unicodeInsertionActive := false
         SendInput {U+%characterCodeInput%}
     return
 
