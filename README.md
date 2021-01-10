@@ -143,9 +143,16 @@ This is basically a lost / not properly working Windows functionality that makes
 To do this
 - Hold down the `Alt` key
 - Press `+` or `-` on your numpad.
-  - In case you use `+`, you will have to use the character's hex value
-  - In case you use `-`, you will have to use the character's decimal value
-- Type the character code
+  - In case `-` is used, the character's **decimal** value will have to be entered at the next step
+  - In case `+` is used, the character's **hex** value will have to be entered at the next step
+- Type the character code  \
+  To enter hex values, both the `a...f` keys can be used, or the following associated numpad keys
+  - `a` ~ `/`
+  - `b` ~ `*`
+  - `c` ~ `-`
+  - `d` ~ `+`
+  - `e` ~ `Enter`
+  - `f` ~ `.`
 - Release `Alt`
 
 # Notes
