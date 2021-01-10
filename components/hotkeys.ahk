@@ -54,12 +54,6 @@ prepareUnicodeInserion() {
     !7::
     !8::
     !9::
-    !a::
-    !b::
-    !c::
-    !d::
-    !e::
-    !f::
     !Numpad1::
     !Numpad2::
     !Numpad3::
@@ -70,6 +64,15 @@ prepareUnicodeInserion() {
     !Numpad7::
     !Numpad8::
     !Numpad9::
+
+#if unicodeInsertionActive && (inputBase == "hex")
+
+    !a::
+    !b::
+    !c::
+    !d::
+    !e::
+    !f::
     !NumpadDiv::
     !NumpadMult::
     !NumpadSub::
