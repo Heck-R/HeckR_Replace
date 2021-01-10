@@ -15,3 +15,7 @@
 
 #Include init.ahk
 readReplaceIni(mainConfigFilePath)
+
+;------------------------------------------------
+
+#Include hotkeys.ahk
