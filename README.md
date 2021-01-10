@@ -2,9 +2,9 @@
 
 HeckR_Replace is a wrapper for AutoHotkey's hotstring functionality.
 
-# Functionallity & Usage
+# Definition of replaces
 
-In HeckR_Replace the hotstring (replaces from now on) are defined in configuration files, to make it wasier on the general user.
+In HeckR_Replace the hotstrings (replaces from now on) are defined in configuration files, to make it wasier on the general user.
 Generally the compiled version is recommended to be used, since that way AutoHotkey does not have to be installed.
 
 ## Configuration Files
@@ -133,6 +133,20 @@ The key is replaced to the value, when the key is typed (with the modifiers / op
 
 For more information on the replaces as options, please see [AutoHotkey - Hotstrings](https://www.autohotkey.com/docs/Hotstrings.htm).  \
 (For clarification: a hotstring is basically in the format of `:<modifiers>:<key>::<value>`)
+
+# Additional Functionalities
+
+## Unicode Character insertion With Character Code
+
+This is basically a lost / not properly working Windows functionality that makes it possible to insert unicode characters with their character values
+
+To do this
+- Hold down the `Alt` key
+- Press `+` or `-` on your numpad.
+  - In case you use `+`, you will have to use the character's hex value
+  - In case you use `-`, you will have to use the character's decimal value
+- Type the character code
+- Release `Alt`
 
 # Notes
 
