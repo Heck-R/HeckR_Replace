@@ -3,7 +3,8 @@
 ; Unicode insertion by character code
 
 unicodeInsertionActive := false
-hexaValue := ""
+characterCodeInput := ""
+inputBase := "" ; hex / dec
 
 hexaAlternativeKeys := {}
 hexaAlternativeKeys["Div"] := "a"
@@ -13,18 +14,34 @@ hexaAlternativeKeys["Add"] := "d"
 hexaAlternativeKeys["Enter"] := "e"
 hexaAlternativeKeys["Dot"] := "f"
 
+prepareUnicodeInserion() {
+    global
+
+    characterCodeInput := ""
+    unicodeInsertionActive := true
+}
+
 #if !unicodeInsertionActive
 
     !NumpadAdd::
-        hexaValue := ""
-        unicodeInsertionActive := true
+        inputBase := "hex"
+        prepareUnicodeInserion()
+    return
+
+    !NumpadSub::
+        inputBase := "dec"
+        prepareUnicodeInserion()
     return
 
 #if unicodeInsertionActive
 
     Alt up::
+        if (inputBase == "dec") {
+            characterCodeInput := format("{:x}", characterCodeInput)
+        }
+
         unicodeInsertionActive := false
-        SendInput {U+%hexaValue%}
+        SendInput {U+%characterCodeInput%}
     return
 
     !0::
@@ -62,7 +79,7 @@ hexaAlternativeKeys["Dot"] := "f"
         RegExMatch(A_ThisHotkey, "O)^!(Numpad)?(.*)$", hotkeyMatch)
         hexaChar := RegExMatch(hotkeyMatch[2], "^[0-9a-f]$") ? hotkeyMatch[2] : hexaAlternativeKeys[hotkeyMatch[2]]
 
-        hexaValue .= hexaChar
+        characterCodeInput .= hexaChar
     return
 
 #if
