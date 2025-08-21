@@ -1,4 +1,6 @@
-﻿#SingleInstance, Force
+﻿#Requires AutoHotkey v1
+
+#SingleInstance, Force
 
 #Include <HeckerFunc>
 
